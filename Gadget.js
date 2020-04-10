@@ -22,7 +22,7 @@ function createTable(data){
             td.appendChild(ips);
         } else {
             var td = tr.insertCell();
-                td.appendChild(document.createTextNode(data[user].ip));
+                td.appendChild(document.createTextNode(data[user].ip[0]));
         }
 
         if ( data[user].ua.length > 1) {
@@ -36,7 +36,9 @@ function createTable(data){
             td.appendChild(uas);
         } else {
             var td = tr.insertCell();
-                td.appendChild('<code>' + document.createTextNode(data[user].ua) + '</code>');
+            var ua = document.createElement('code');
+                ua.innerText = data[user].ua[0];
+                td.appendChild( ua );
         }
     }
     $('#checkuserform').after(tbl);
@@ -62,7 +64,7 @@ function createTableText(data){
                 text += "\n* <code>" + data[user].ua[i] + '</code>';
             }
         } else {
-            text += "\n* <code>" + data[user].ua[i] + '</code>';
+            text += "\n* <code>" + data[user].ua[0] + '</code>';
         }
 
         text += "\n|-\n";
