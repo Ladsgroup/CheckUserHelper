@@ -109,7 +109,7 @@
         createTable(data);
         var copyText = createTableText(data);
         mw.loader.using("mediawiki.widgets", function () {
-            var dir = (document.getElementsByTagName('html')[0].dir == 'ltr') ? 'left' : 'right';
+            var dir = (mw.config.get('pageLanguageDir') == 'ltr') ? 'left' : 'right';
             var shortened = new mw.widgets.CopyTextLayout({
                 align: 'top',
                 copyText: copyText,
