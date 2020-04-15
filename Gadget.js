@@ -1,3 +1,6 @@
+// Author: [[User:Ladsgroup]]
+// License: GPLv3
+// Source: https://github.com/Ladsgroup/CheckUserHelper
 (function ($) {
     function createTable(data) {
         var tbl = document.createElement('table');
