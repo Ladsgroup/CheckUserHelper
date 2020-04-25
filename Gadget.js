@@ -87,25 +87,39 @@
             }
             var ua = $(this).children('small').children('.mw-checkuser-agent').text();
             if (!ua) {
-                return;
+                var uas = [];
+                $(this).children('ol').last().children('li').children('i').each( function() {
+                    uas.push($(this).text());
+                });
+            } else {
+                uas = [ua];
             }
             var ip = $(this).children('small').children('a').children('bdi').text();
             if (!ip) {
-                return;
+                var ips = [];
+                $(this).children('ol').first().children('li').children('a').each( function() {
+                    ips.push($(this).children('bdi').text());
+                });
+            } else {
+                ips = [ip];
             }
             hasData = true;
             if (data[user]) {
-                if (data[user].ip.indexOf(ip) === -1) {
-                    data[user].ip.push(ip);
+                for (ip in ips) {
+                    if (data[user].ip.indexOf(ip) === -1) {
+                        data[user].ip.push(ip);
+                    }
                 }
-
-                if (data[user].ua.indexOf(ua) === -1) {
-                    data[user].ua.push(ua);
+    
+                for (ua in uas) {
+                    if (data[user].ua.indexOf(ua) === -1) {
+                        data[user].ua.push(ua);
+                    }
                 }
             } else {
-                data[user] = { ip: [ip], ua: [ua] };
+                data[user] = { ip: ips, ua: uas };
             }
-        })
+        });
         if (!hasData) {
             return;
         }
