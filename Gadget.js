@@ -105,13 +105,15 @@
             }
             hasData = true;
             if (data[user]) {
-                for (ip in ips) {
+                for (i in ips) {
+                    ip = ips[i];
                     if (data[user].ip.indexOf(ip) === -1) {
                         data[user].ip.push(ip);
                     }
                 }
     
-                for (ua in uas) {
+                for (i in uas) {
+                    ua = uas[i];
                     if (data[user].ua.indexOf(ua) === -1) {
                         data[user].ua.push(ua);
                     }
