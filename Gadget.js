@@ -1,6 +1,9 @@
-// Author: [[User:Ladsgroup]]
+// Author: [[User:Ladsgroup]], [[User:Huji]]
 // License: GPLv3
 // Source: https://github.com/Ladsgroup/CheckUserHelper
+// Load using: mw.loader.load('//fa.wikipedia.org/w/index.php?title=User:Huji/CheckUserHelper.js&action=raw&ctype=text/javascript');
+// Reset interface using: $('#SummaryTable').remove(); $('.mw-widget-copyTextLayout').remove();
+// Debug using: $('#SummaryTable').remove(); $('.mw-widget-copyTextLayout').remove(); mw.loader.load('//fa.wikipedia.org/w/index.php?title=User:Huji/CheckUserHelper.js&action=raw&ctype=text/javascript');
 (function ($) {
     function createTable(data) {
         var tbl = document.createElement('table');
@@ -11,12 +14,13 @@
         tr.appendChild($('<th>').text('IP(s)')[0]);
         tr.appendChild($('<th>').text('User Agent(s)')[0]);
 
-        for (user in data) {
+        for (var user in data) {
             var tr = tbl.insertRow();
             var td = tr.insertCell();
             td.appendChild(document.createTextNode(user));
             if (data[user].ip.length > 1) {
                 var ips = document.createElement('ul');
+                ips.setAttribute('id', 'iplist');
                 for (i = 0, len = data[user].ip.length; i < len; i++) {
                     var ip = document.createElement('li');
                     ip.innerHTML = data[user].ip[i];
@@ -48,6 +52,43 @@
         $('#checkuserform').after(tbl);
     }
 
+    function getCIDR(ip) {
+        console.log('Querying for ' + ip);
+        var cidr = {
+            country: false,
+            range: false,
+            name: false
+        }
+        return new Promise((resolve) => {
+            $.ajax({
+                url: 'https://stat.ripe.net/data/whois/data.json?resource=' + ip
+            }).done(function (resp) {
+                rec = resp.data.records[0];
+                $.each(rec, function (idx, details) {
+                    switch (details.key) {
+                        case 'country':
+                            cidr.country = details.value;
+                            break;
+                        case 'inetnum':
+                        case 'CIDR':
+                            cidr.range = details.value;
+                            break;
+                        case 'netname':
+                        case 'NetName':
+                            cidr.name = details.value;
+                            break;
+                        default:
+                            break;
+                    }
+                });
+                if (cidr.range === false) {
+                    cidr = false;
+                }
+                resolve(cidr);
+            });
+        });
+    }
+
     function createTableText(data) {
         var text = "{| class=wikitable\n! User!! IP(s)!! UA(s)\n|-\n";
 
@@ -77,11 +118,35 @@
         return text;
     }
 
+    function copyButton(copyText) {
+        // If another copy of the button exists, remove it
+        // This happens when the CIDR data is loaded (which is async and takes time)
+        $('.mw-widget-copyTextLayout').remove();
+
+        mw.loader.using("mediawiki.widgets", function () {
+            var dir = (document.getElementsByTagName('html')[0].dir == 'ltr') ? 'left' : 'right';
+            var shortened = new mw.widgets.CopyTextLayout({
+                align: 'top',
+                copyText: copyText,
+                successMessage: 'Copied',
+                multiline: true,
+                failMessage: 'Could not copy'
+            });
+            shortened.textInput.$element.css(dir, '-9999px');
+            shortened.textInput.$element.css('position', 'absolute');
+            shortened.buttonWidget.$element.css('position', 'absolute');
+            shortened.buttonWidget.$element.css(dir, '0px');
+            shortened.buttonWidget.$element.after('<br>');
+            $('#SummaryTable').after(shortened.$element);
+        });
+    }
 
     function theGadget() {
-        var data = {}, hasData = false;
+        var data = {}, hasData = false, user = false;
         $('#checkuserresults li').each(function () {
-            var user = $(this).children('span').children('.mw-userlink').attr('title');
+            if (!user) {
+                user = $(this).children('span').children('.mw-userlink').attr('title');
+            }
             if (!user) {
                 return;
             }
@@ -127,23 +192,38 @@
         }
         createTable(data);
         var copyText = createTableText(data);
-        mw.loader.using("mediawiki.widgets", function () {
-            var dir = (document.getElementsByTagName('html')[0].dir == 'ltr') ? 'left' : 'right';
-            var shortened = new mw.widgets.CopyTextLayout({
-                align: 'top',
-                copyText: copyText,
-                successMessage: 'Copied',
-                multiline: true,
-                failMessage: 'Could not copy'
-            });
-            shortened.textInput.$element.css(dir, '-9999px');
-            shortened.textInput.$element.css('position', 'absolute');
-            shortened.buttonWidget.$element.css('position', 'absolute');
-            shortened.buttonWidget.$element.css(dir, '0px');
-            shortened.buttonWidget.$element.after('<br>');
-            $('#SummaryTable').after(shortened.$element);
+        copyButton(copyText);
 
-        });
+        // Pull CIDR info; takes time
+        async function displayCIDR(data) {
+            var cidr = {};
+
+            for (const thisip of data[user].ip) {
+                thiscidr = await getCIDR(thisip);
+                if (cidr[thiscidr.range] === undefined) {
+                    cidr[thiscidr.range] = thiscidr;
+                    cidr[thiscidr.range].ips = [thisip];
+                } else {
+                    console.log(thiscidr.range + ' already existed!');
+                    cidr[thiscidr.range].ips.push(thisip);
+                }
+            }
+            $('#SummaryTable ul#iplist').empty();
+            $.each(cidr, function (idx, c) {
+                var li = document.createElement('li');
+                if (c.ips.length > 1) {
+                    li.innerHTML = c.range + ' (' + c.country + ')';
+                } else {
+                    li.innerHTML = c.ips[0] + ' (' + c.country + ')';
+                }
+                $('#SummaryTable ul#iplist').append(li);
+            });
+
+            copyText = createTableText(data);
+            copyButton();
+        }
+
+        displayCIDR(data);
     };
 
     if (mw.config.get('wgCanonicalSpecialPageName') == 'CheckUser') {
