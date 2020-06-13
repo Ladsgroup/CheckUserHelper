@@ -7,6 +7,9 @@
         tbl.className = 'wikitable';
         tbl.id = 'SummaryTable';
         var tr = tbl.insertRow();
+        mw.loader.using( 'jquery.makeCollapsible' ).then( function () {
+			$('#SummaryTable').makeCollapsible();
+		} );
         tr.appendChild($('<th>').text('User')[0]);
         tr.appendChild($('<th>').text('IP(s)')[0]);
         tr.appendChild($('<th>').text('User Agent(s)')[0]);
