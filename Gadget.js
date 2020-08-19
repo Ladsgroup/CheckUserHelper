@@ -84,7 +84,7 @@
     function theGadget() {
         var data = {}, hasData = false;
         $('#checkuserresults li').each(function () {
-            var user = $(this).children('span').children('.mw-userlink').attr('title');
+            var user = $(this).children('span').children('.mw-userlink').first().text();
             if (!user) {
                 return;
             }
