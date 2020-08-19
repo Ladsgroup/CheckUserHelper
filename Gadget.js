@@ -80,6 +80,12 @@
         return text;
     }
 
+    function compareIPs(a, b) {
+        const num1 = a.indexOf('.') > -1 ? Number(a.split(".").map((num) => (`000${num}`).slice(-3)).join("")) : Number('0x' + a.split(":").map((num) => (`0000${num}`).slice(-4)).join(""));
+        const num2 = b.indexOf('.') > -1 ? Number(b.split(".").map((num) => (`000${num}`).slice(-3)).join("")) : Number('0x' + b.split(":").map((num) => (`0000${num}`).slice(-4)).join(""));
+        return num1-num2;
+    }
+
 
     function theGadget() {
         var data = {}, hasData = false;
@@ -128,6 +134,13 @@
         if (!hasData) {
             return;
         }
+        // sort IPs and UAs
+        $.each(data, function(idx){
+            ip = data[idx].ip;
+            ip.sort(compareIPs);
+            data[idx].ip = ip;
+            data[idx].ua.sort();
+        });
         createTable(data);
         var copyText = createTableText(data);
         mw.loader.using("mediawiki.widgets", function () {
