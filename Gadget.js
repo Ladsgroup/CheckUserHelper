@@ -104,11 +104,6 @@
                 uas = {};
                 uas[ua] = 1;
             }
-            console.log($(this).children('.mw-checkuser-indented'));
-            console.log($(this).children('.mw-checkuser-indented').children('small'));
-            console.log($(this).children('.mw-checkuser-indented').children('small').children('a'));
-            console.log($(this).children('.mw-checkuser-indented').children('small').children('a').children('bdi'));
-            console.log($(this).children('.mw-checkuser-indented').children('small').children('a').children('bdi').text());
             var ip = $(this).children('.mw-checkuser-indented').children('small').children('a').children('bdi').text();
             if (!ip) {
                 var ips = [];
