@@ -1,4 +1,3 @@
-// Author: [[User:Ladsgroup]]
 // License: GPLv3
 // Source: https://github.com/Ladsgroup/CheckUserHelper
 (function ($) {
@@ -17,36 +16,36 @@
         for (user in data) {
             var tr = tbl.insertRow();
             var td = tr.insertCell();
-            td.appendChild(document.createTextNode(user));
-            if (data[user].ip.length > 1) {
-                var ips = document.createElement('ul');
-                for (i = 0, len = data[user].ip.length; i < len; i++) {
-                    var ip = document.createElement('li');
-                    ip.innerHTML = data[user].ip[i];
-                    ips.appendChild(ip);
-                }
-                var td = tr.insertCell();
-                td.appendChild(ips);
-            } else {
-                var td = tr.insertCell();
-                td.appendChild(document.createTextNode(data[user].ip[0]));
+            var userElement = document.createElement('a');
+            userElement.setAttribute('href', '/wiki/Special:Contributions/' + mw.util.escapeIdForLink(user));
+            userElement.textContent = user;
+            td.appendChild(userElement);
+            var ips = document.createElement('ul');
+            for (i = 0, len = data[user].sorted.ip.length; i < len; i++) {
+                var ipText = data[user].sorted.ip[i];
+                var ip = document.createElement('li');
+                var counter = document.createElement('span');
+                counter.style.cssText += 'user-select: none;';
+                counter.textContent = ' [' + data[user].ip[ipText] + ']';
+                ip.textContent = ipText;
+                ip.appendChild(counter);
+                ips.appendChild(ip);
             }
+            var td = tr.insertCell();
+            td.appendChild(ips);
 
-            if (data[user].ua.length > 1) {
-                var uas = document.createElement('ul');
-                for (i = 0, len = data[user].ua.length; i < len; i++) {
-                    var ua = document.createElement('li');
-                    ua.innerHTML = '<code>' + data[user].ua[i] + '</code>';
-                    uas.appendChild(ua);
-                }
-                var td = tr.insertCell();
-                td.appendChild(uas);
-            } else {
-                var td = tr.insertCell();
-                var ua = document.createElement('code');
-                ua.innerText = data[user].ua[0];
-                td.appendChild(ua);
+            var uas = document.createElement('ul');
+            for (i = 0, len = data[user].sorted.ua.length; i < len; i++) {
+                var uaText = data[user].sorted.ua[i];
+                var ua = document.createElement('li');
+                var uaCode = document.createElement('code');
+                uaCode.textContent = uaText;
+                ua.textContent = ' [' + data[user].ua[uaText] + ']';
+                ua.prepend(uaCode);
+                uas.appendChild(ua);
             }
+            var td = tr.insertCell();
+            td.appendChild(uas);
         }
         $('#checkuserform').after(tbl);
     }
@@ -54,29 +53,27 @@
     function createTableText(data) {
         var text = "{| class=wikitable\n! User!! IP(s)!! UA(s)\n|-\n";
 
-        for (user in data) {
+        for (let user in data) {
             text += "|" + user + "||"
-            if (data[user].ip.length > 1) {
-                for (i = 0, len = data[user].ip.length; i < len; i++) {
-                    text += "\n* " + data[user].ip[i];
+            if (data[user].sorted.ip.length > 1) {
+                for (i = 0, len = data[user].sorted.ip.length; i < len; i++) {
+                    var ipText = data[user].sorted.ip[i];
+                    text += "\n* " + ipText + ' [' + data[user].ip[ipText] + ']';
                 }
             } else {
-                text += data[user].ip
+                let ipText = data[user].sorted.ip[0];
+                text += ipText + ' [' + data[user].ip[ipText] + ']';
             }
-            text += "\n|"
+            text += "\n|";
 
-            if (data[user].ua.length > 1) {
-                var uas = document.createElement('ul');
-                for (i = 0, len = data[user].ua.length; i < len; i++) {
-                    text += "\n* <code>" + data[user].ua[i] + '</code>';
-                }
-            } else {
-                text += "\n* <code>" + data[user].ua[0] + '</code>';
+            for (i = 0, len = data[user].sorted.ua.length; i < len; i++) {
+                var uaText = data[user].sorted.ua[i];
+                text += "\n* <code>" + uaText + '</code> [' + data[user].ua[uaText] + ']';
             }
 
             text += "\n|-\n";
         }
-        text += "|}"
+        text += "|}";
         return text;
     }
 
@@ -90,56 +87,63 @@
     function theGadget() {
         var data = {}, hasData = false;
         $('#checkuserresults li').each(function () {
+            var uas = {}, ips = {}, ip, ua;
             var user = $(this).children('span').children('.mw-userlink').first().text();
             if (!user) {
                 return;
             }
-            var ua = $(this).children('small').children('.mw-checkuser-agent').text();
+            var ua = $(this).find('.mw-checkuser-agent').text();
             if (!ua) {
-                var uas = [];
+                var uas = {};
                 $(this).children('ol').last().children('li').children('i').each( function() {
-                    uas.push($(this).text());
+                    var uaText = $(this).text();
+                    uas[uaText] = uas[uaText] || 0;
+                    uas[uaText] += 1;
                 });
             } else {
-                uas = [ua];
+                uas = {};
+                uas[ua] = 1;
             }
-            var ip = $(this).children('small').children('a').children('bdi').text();
+            var ip = $(this).children('.mw-checkuser-indented').children('small').children('a').children('bdi').text();
             if (!ip) {
                 var ips = [];
                 $(this).children('ol').first().children('li').children('a').each( function() {
-                    ips.push($(this).children('bdi').text());
+                    var ipText = $(this).children('bdi').text();
+                    ips[ipText] = ips[ipText] || 0;
+                    ips[ipText] += 1;
                 });
             } else {
-                ips = [ip];
+                ips = {};
+                ips[ip] = 1;
             }
             hasData = true;
             if (data[user]) {
-                for (i in ips) {
-                    ip = ips[i];
-                    if (data[user].ip.indexOf(ip) === -1) {
-                        data[user].ip.push(ip);
-                    }
+                for (ip in ips) {
+                    data[user].ip[ip] = data[user].ip[ip] || 0;
+                    data[user].ip[ip] += ips[ip];
                 }
     
-                for (i in uas) {
-                    ua = uas[i];
-                    if (data[user].ua.indexOf(ua) === -1) {
-                        data[user].ua.push(ua);
-                    }
+                for (ua in uas) {
+                    data[user].ua[ua] = data[user].ua[ua] || 0;
+                    data[user].ua[ua] += uas[ua];
                 }
             } else {
                 data[user] = { ip: ips, ua: uas };
             }
         });
+        
         if (!hasData) {
             return;
         }
         // sort IPs and UAs
         $.each(data, function(idx){
-            ip = data[idx].ip;
+            ip = Object.keys(data[idx].ip);
             ip.sort(compareIPs);
-            data[idx].ip = ip;
-            data[idx].ua.sort();
+            ua = Object.keys(data[idx].ua);
+            data[idx].sorted = {
+                ip: ip,
+                ua: ua.sort()
+            };
         });
         createTable(data);
         var copyText = createTableText(data);
@@ -160,7 +164,7 @@
             $('#SummaryTable').after(shortened.$element);
 
         });
-    };
+    }
 
     if (mw.config.get('wgCanonicalSpecialPageName') == 'CheckUser') {
         theGadget();
